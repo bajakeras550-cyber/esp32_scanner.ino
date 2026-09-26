@@ -1,1 +1,910 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<title>2.4 GHz WiFi Scanner</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: #080d18;
+    color: white;
+    font-family: Arial, sans-serif;
+}
+
+header {
+    padding: 20px;
+    background: #10182a;
+    border-bottom: 1px solid #26334f;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 25px;
+}
+
+header p {
+    color: #9ca9c4;
+    margin-bottom: 0;
+}
+
+.container {
+    max-width: 1200px;
+    margin: auto;
+    padding: 20px;
+}
+
+button {
+    border: none;
+    background: #5865f2;
+    color: white;
+    padding: 12px 18px;
+    border-radius: 9px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #4752c4;
+}
+
+input {
+    background: #111a2d;
+    color: white;
+    border: 1px solid #34415f;
+    padding: 11px;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 400px;
+}
+
+.status {
+    margin-top: 12px;
+    color: #9ca9c4;
+}
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.card {
+    background: #10182a;
+    border: 1px solid #26334f;
+    border-radius: 15px;
+    padding: 18px;
+}
+
+.card-title {
+    color: #9ca9c4;
+    font-size: 14px;
+}
+
+.number {
+    font-size: 30px;
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+.panel {
+    margin-top: 20px;
+}
+
+canvas {
+    width: 100%;
+    height: 330px;
+    background: #0b1220;
+    border-radius: 12px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+th,
+td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #26334f;
+}
+
+th {
+    color: #9ca9c4;
+}
+
+.table-container {
+    overflow-x: auto;
+}
+
+.signal {
+    font-weight: bold;
+}
+
+.good {
+    color: #48d597;
+}
+
+.medium {
+    color: #f5c451;
+}
+
+.weak {
+    color: #ff7373;
+}
+
+@media(max-width: 750px) {
+
+    .cards {
+        grid-template-columns: 1fr;
+    }
+
+    th,
+    td {
+        font-size: 13px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+
+<h1>📡 2.4 GHz Wi-Fi Scanner</h1>
+
+<p>
+ESP32 Wi-Fi & BLE monitoring dashboard
+</p>
+
+</header>
+
+<div class="container">
+
+<div class="card">
+
+<label>Alamat ESP32</label>
+
+<br><br>
+
+<input
+id="esp32"
+value="http://192.168.4.1"
+placeholder="http://192.168.4.1"
+>
+
+<br><br>
+
+<button onclick="scan()">
+🔍 SCAN SEKARANG
+</button>
+
+<div id="status" class="status">
+Belum melakukan scan.
+</div>
+
+</div>
+
+
+<div class="cards">
+
+<div class="card">
+
+<div class="card-title">
+Wi-Fi 2.4 GHz
+</div>
+
+<div
+id="wifiCount"
+class="number">
+0
+</div>
+
+</div>
+
+
+<div class="card">
+
+<div class="card-title">
+Bluetooth BLE
+</div>
+
+<div
+id="bleCount"
+class="number">
+0
+</div>
+
+</div>
+
+
+<div class="card">
+
+<div class="card-title">
+Scan terakhir
+</div>
+
+<div
+id="time"
+class="number">
+-
+</div>
+
+</div>
+
+</div>
+
+
+<div class="panel card">
+
+<h2>📊 Grafik Channel 2.4 GHz</h2>
+
+<p class="status">
+Menunjukkan jaringan yang terdeteksi pada channel 1–13.
+</p>
+
+<canvas
+id="channelChart"
+width="1000"
+height="330">
+</canvas>
+
+</div>
+
+
+<div class="panel card">
+
+<h2>📶 Grafik Kekuatan Sinyal</h2>
+
+<canvas
+id="signalChart"
+width="1000"
+height="330">
+</canvas>
+
+</div>
+
+
+<div class="panel card">
+
+<h2>📡 Wi-Fi Terdeteksi</h2>
+
+<div class="table-container">
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>SSID</th>
+<th>Channel</th>
+<th>RSSI</th>
+<th>BSSID</th>
+<th>Security</th>
+
+</tr>
+
+</thead>
+
+<tbody id="wifiTable">
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+
+<div class="panel card">
+
+<h2>🟦 Bluetooth BLE</h2>
+
+<div class="table-container">
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Nama</th>
+<th>RSSI</th>
+<th>Address</th>
+
+</tr>
+
+</thead>
+
+<tbody id="bleTable">
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+</div>
+
+
+<script>
+
+let lastData = {
+    wifi: [],
+    ble: []
+};
+
+
+function signalClass(rssi) {
+
+    if (rssi >= -60)
+        return "good";
+
+    if (rssi >= -75)
+        return "medium";
+
+    return "weak";
+}
+
+
+async function scan() {
+
+    const address =
+        document.getElementById("esp32").value.trim();
+
+    const status =
+        document.getElementById("status");
+
+    status.innerText =
+        "🔍 Sedang memindai Wi-Fi dan Bluetooth...";
+
+    try {
+
+        const response =
+            await fetch(address + "/api/scan");
+
+        if (!response.ok) {
+
+            throw new Error(
+                "ESP32 memberikan HTTP " +
+                response.status
+            );
+
+        }
+
+        const data =
+            await response.json();
+
+        lastData = data;
+
+        render(data);
+
+        status.innerText =
+            "✅ Scan selesai.";
+
+        document.getElementById("time")
+            .innerText =
+            new Date().toLocaleTimeString();
+
+    }
+
+    catch(error) {
+
+        console.error(error);
+
+        status.innerText =
+            "❌ Tidak dapat terhubung ke ESP32. " +
+            "Pastikan HP/PC terhubung ke ESP32.";
+
+    }
+
+}
+
+
+function render(data) {
+
+    const wifi =
+        data.wifi || [];
+
+    const ble =
+        data.ble || [];
+
+
+    document.getElementById("wifiCount")
+        .innerText =
+        wifi.length;
+
+
+    document.getElementById("bleCount")
+        .innerText =
+        ble.length;
+
+
+    renderWifi(wifi);
+
+    renderBLE(ble);
+
+    drawChannels(wifi);
+
+    drawSignals(wifi, ble);
+
+}
+
+
+function renderWifi(wifi) {
+
+    const table =
+        document.getElementById("wifiTable");
+
+    table.innerHTML = "";
+
+
+    if (wifi.length === 0) {
+
+        table.innerHTML =
+            "<tr><td colspan='5'>Tidak ada jaringan.</td></tr>";
+
+        return;
+    }
+
+
+    wifi.sort(
+        (a,b) => b.rssi - a.rssi
+    );
+
+
+    wifi.forEach(network => {
+
+        const row =
+            document.createElement("tr");
+
+
+        row.innerHTML = `
+
+<td>
+${escapeHTML(network.ssid || "(Hidden)")}
+</td>
+
+<td>
+${network.channel}
+</td>
+
+<td class="${signalClass(network.rssi)}">
+${network.rssi} dBm
+</td>
+
+<td>
+${network.bssid}
+</td>
+
+<td>
+${network.secure ? "🔒 Secured" : "🔓 Open"}
+</td>
+
+`;
+
+        table.appendChild(row);
+
+    });
+
+}
+
+
+function renderBLE(ble) {
+
+    const table =
+        document.getElementById("bleTable");
+
+    table.innerHTML = "";
+
+
+    if (ble.length === 0) {
+
+        table.innerHTML =
+            "<tr><td colspan='3'>Tidak ada BLE advertisement.</td></tr>";
+
+        return;
+    }
+
+
+    ble.sort(
+        (a,b) => b.rssi - a.rssi
+    );
+
+
+    ble.forEach(device => {
+
+        const row =
+            document.createElement("tr");
+
+
+        row.innerHTML = `
+
+<td>
+${escapeHTML(device.name || "(tanpa nama)")}
+</td>
+
+<td class="${signalClass(device.rssi)}">
+${device.rssi} dBm
+</td>
+
+<td>
+${device.address}
+</td>
+
+`;
+
+        table.appendChild(row);
+
+    });
+
+}
+
+
+function drawChannels(wifi) {
+
+    const canvas =
+        document.getElementById("channelChart");
+
+    const ctx =
+        canvas.getContext("2d");
+
+
+    const width =
+        canvas.width;
+
+    const height =
+        canvas.height;
+
+
+    ctx.clearRect(
+        0,
+        0,
+        width,
+        height
+    );
+
+
+    const channels =
+        Array(14).fill(0);
+
+
+    wifi.forEach(network => {
+
+        if (
+            network.channel >= 1 &&
+            network.channel <= 13
+        ) {
+
+            channels[
+                network.channel
+            ]++;
+
+        }
+
+    });
+
+
+    const max =
+        Math.max(
+            1,
+            ...channels
+        );
+
+
+    const left = 55;
+
+    const bottom = 270;
+
+    const chartHeight = 220;
+
+    const barWidth = 55;
+
+    ctx.strokeStyle =
+        "#34415f";
+
+    ctx.fillStyle =
+        "#aeb9d6";
+
+    ctx.font =
+        "14px Arial";
+
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        left,
+        30
+    );
+
+    ctx.lineTo(
+        left,
+        bottom
+    );
+
+    ctx.lineTo(
+        width - 30,
+        bottom
+    );
+
+    ctx.stroke();
+
+
+    for (
+        let channel = 1;
+        channel <= 13;
+        channel++
+    ) {
+
+        const value =
+            channels[channel];
+
+        const barHeight =
+            (value / max) *
+            chartHeight;
+
+
+        const x =
+            left +
+            (channel - 1) *
+            65;
+
+
+        const y =
+            bottom -
+            barHeight;
+
+
+        ctx.fillStyle =
+            "#6474ff";
+
+        ctx.fillRect(
+            x,
+            y,
+            barWidth,
+            barHeight
+        );
+
+
+        ctx.fillStyle =
+            "#aeb9d6";
+
+        ctx.fillText(
+            "CH " + channel,
+            x + 5,
+            bottom + 22
+        );
+
+
+        ctx.fillText(
+            value,
+            x + 23,
+            y - 8
+        );
+
+    }
+
+}
+
+
+function drawSignals(wifi, ble) {
+
+    const canvas =
+        document.getElementById("signalChart");
+
+    const ctx =
+        canvas.getContext("2d");
+
+
+    const width =
+        canvas.width;
+
+    const height =
+        canvas.height;
+
+
+    ctx.clearRect(
+        0,
+        0,
+        width,
+        height
+    );
+
+
+    const devices = [];
+
+
+    wifi.forEach(w => {
+
+        devices.push({
+
+            name:
+                w.ssid || "WiFi",
+
+            rssi:
+                w.rssi
+
+        });
+
+    });
+
+
+    ble.forEach(b => {
+
+        devices.push({
+
+            name:
+                b.name || "BLE",
+
+            rssi:
+                b.rssi
+
+        });
+
+    });
+
+
+    const list =
+        devices.slice(0, 20);
+
+
+    if (list.length === 0)
+        return;
+
+
+    const minRSSI = -100;
+
+    const maxRSSI = -20;
+
+
+    const bottom = 270;
+
+    const chartHeight = 220;
+
+
+    const barWidth =
+        Math.max(
+            20,
+            800 / list.length
+        );
+
+
+    ctx.strokeStyle =
+        "#34415f";
+
+    ctx.fillStyle =
+        "#aeb9d6";
+
+    ctx.font =
+        "13px Arial";
+
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        45,
+        30
+    );
+
+    ctx.lineTo(
+        45,
+        bottom
+    );
+
+    ctx.lineTo(
+        width - 20,
+        bottom
+    );
+
+    ctx.stroke();
+
+
+    list.forEach(
+        (device,index) => {
+
+        const normalized =
+            (device.rssi - minRSSI) /
+            (maxRSSI - minRSSI);
+
+
+        const barHeight =
+            Math.max(
+                2,
+                normalized *
+                chartHeight
+            );
+
+
+        const x =
+            60 +
+            index *
+            barWidth;
+
+
+        const y =
+            bottom -
+            barHeight;
+
+
+        ctx.fillStyle =
+            "#32c5ff";
+
+
+        ctx.fillRect(
+            x,
+            y,
+            barWidth - 6,
+            barHeight
+        );
+
+
+        ctx.save();
+
+        ctx.translate(
+            x,
+            bottom + 15
+        );
+
+        ctx.rotate(
+            -0.55
+        );
+
+
+        ctx.fillStyle =
+            "#aeb9d6";
+
+
+        ctx.fillText(
+            device.name
+                .substring(0,15),
+            0,
+            0
+        );
+
+
+        ctx.restore();
+
+
+        ctx.fillStyle =
+            "#aeb9d6";
+
+
+        ctx.fillText(
+            device.rssi + " dBm",
+            x,
+            y - 6
+        );
+
+    });
+
+}
+
+
+function escapeHTML(text) {
+
+    return String(text)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+
+}
+
+</script>
+
+</body>
+  </html>
